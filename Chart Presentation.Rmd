@@ -1,0 +1,161 @@
+---
+title: "Fred Charts"
+author: "James Walsh"
+date: "12/24/2019"
+output:
+  beamer_presentation: default
+  ioslides_presentation: default
+---
+
+```{r setup and data, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(fredr)
+library(ggplot2)
+library(dplyr)
+library(purrr)
+
+fredr_set_key("d80031904a0f06ff89e0dada3ccd6056")
+UNRATE<-fredr(series_id="UNRATE",observation_start=as.Date("2000-01-01"))
+U6RATE<-fredr(series_id="U6RATE",observation_start=as.Date("2000-01-01"))
+GDP.q<-fredr(series_id="GDPC1",observation_start=as.Date("1980-01-01"),units = "pch")
+GDP.a<-fredr(series_id="GDPC1",observation_start=as.Date("1980-01-01"),units = "pc1")
+T10Y2Y<-fredr(series_id = "T10Y2Y", observation_start = as.Date("1985-01-01"))
+T10Y<-fredr(series_id = "DGS10", observation_start = as.Date("1985-01-01"))
+T5Y<-fredr(series_id = "DGS5", observation_start = as.Date("1985-01-01"))
+HY_Spread<-fredr(series_id = "BAMLH0A0HYM2", observation_start = as.Date("1998-01-01"))
+HY_Yield<-fredr(series_id = "BAMLH0A0HYM2EY", observation_start = as.Date("1998-01-01"))
+CCC_Spread<-fredr(series_id = "BAMLH0A3HYC", observation_start = as.Date("1998-01-01"))
+FEDFUNDS<-fredr(series_id = "FEDFUNDS", observation_start = as.Date("1985-01-01"))
+FIVEYEAR5Y<-fredr(series_id = "T5YIFR", observation_start = as.Date("2003-01-02"))
+BREAKEVEN10Y<-fredr(series_id = "T10YIE", observation_start = as.Date("2003-01-02"))
+BREAKEVEN5Y<-fredr(series_id = "T5YIE", observation_start = as.Date("2003-01-02"))
+UMICHEXP<-fredr(series_id = "MICH", observation_start = as.Date("1978-01-02"))
+CPI<-fredr(series_id = "CPIAUCSL", observation_start = as.Date("1947-01-01"))
+PCE<-fredr(series_id = "PCEPI", observation_start = as.Date("1959-01-02"))
+WAGES<-fredr(series_id = "CES0500000003",observation_start = as.Date("2006-03-01"))
+OIL<-fredr(series_id = "DCOILWTICO", observation_start = as.Date("1986-01-02"))
+PRODUCERPRICES<-fredr(series_id = "PPIACO",observation_start = as.Date("1913-01-01"))
+CORECPI<-fredr(series_id = "CPILFESL", observation_start = as.Date("1947-01-01"))
+
+```
+
+```{r inflation, include=FALSE}
+inflation_data<-cbind(BREAKEVEN5Y,FIVEYEAR5Y,UMICHEXP,WAGES,OIL,PRODUCERPRICES,CPI,CORECPI,PCE)
+
+
+#NEXT STEPS: convert data to monthly, calculate YOY, pick latest and pre-pandemic
+```
+
+
+```{r defining, include=FALSE}
+start_date<-"1990-01-31"
+end_date<-"2020-10-31"
+
+pch<-function(data, lag = 1) {
+    if (!is.ts(data)) stop("data must be of type ts")
+    if (!is.numeric(lag)) stop("lag must be of type numeric")
+    data/stats::lag(data, -lag) -1
+}
+```
+
+```{r plots, echo=TRUE}
+knitr::opts_chunk$set(echo = FALSE)
+
+filter(T10Y,date>"1985-01-01") %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Spread, %", color = "Series") +
+    ggtitle("US 10-year Treasury") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5))
+
+filter(T10Y2Y,date>"1985-01-01") %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Spread, %", color = "Series") +
+    ggtitle("US Treasury Yield Curve: 10-year minus 2-year") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5))
+
+  ggplot(data = GDP.a, mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Spread, %", color = "Series") +
+    ggtitle("GDP Growth") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5))
+
+x<-map_dfr(c("UNRATE","U6RATE"),fredr)
+filter(x,date>"2000-01-01") %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate, %", color = "Series") +
+    ggtitle("US Unemployment Rate") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5))  
+  
+map_dfr(c("UNRATE", "FEDFUNDS"), fredr) %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate", color = "Series") +
+    ggtitle("US Unemployment Rate & Fed Funds") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5))  
+  
+ggplot(data = HY_Spread, mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate", color = "Series") +
+    ggtitle("US High Yield Spread") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5))  
+
+ggplot(data = CCC_Spread, mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate", color = "Series") +
+    ggtitle("US CCC Spread") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5))  
+
+filter(FIVEYEAR5Y,date>"2003-01-02") %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Date", y = "Inflation, %") +
+    ggtitle("5 year forward 5 year inflation rate") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5)) +
+    theme(legend.position = "none")
+ggsave("5y5y.png")
+  
+filter(BREAKEVEN10Y,date>"2003-01-02") %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Date", y = "Inflation Breakeven, %") +
+    ggtitle("10 year Inflation Breakeven") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5)) +
+    theme(legend.position = "none")
+ggsave("BE10.png")
+
+filter(BREAKEVEN5Y,date>"2003-01-02") %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Date", y = "Inflation Breakeven, %") +
+    ggtitle("5 year Inflation Breakeven") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5)) +
+    theme(legend.position = "none")
+ggsave("BE5.png")
+
+filter(UMICHEXP,date>"1990-01-02") %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Date", y = "Inflation, %") +
+    ggtitle("Inflation Expectations (University of Michigan Survey") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5)) +
+    theme(legend.position = "none")
+ggsave("UMICH.png")
+
+CPI.a<-(CPI$value/lag(CPI$value,12)-1)
+CPI<-cbind(CPI,CPI.a)
+filter(CPI,date>"1990-01-02") %>%
+  ggplot(data = ., mapping = aes(x = date, y = CPI.a, color = series_id)) +
+    geom_line() +
+    labs(x = "Date", y = "Annual Inflation, %") +
+    ggtitle("US Consumer Price Inflation") + 
+    theme(plot.title=element_text(size = rel(1.5), lineheight = 0.9, hjust = 0.5)) +
+    theme(legend.position = "none")
+ggsave("CPI.png")
+
+```
+
+
+
